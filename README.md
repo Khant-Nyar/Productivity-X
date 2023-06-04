@@ -56,7 +56,7 @@ script init https://github.com/TripleKay/learning-laravel.git
 
 --help or -h နဲ့အသုံးပြုနည်းကို ကြည်လို့ရပါတယ်
 
-## rsyup
+## devx
 
 Devloper တွေအတွက် linux စသုံးရင်အသုံးများတဲ့ sotware တွေ တစ်ခါတည် install လုပ်ပေတဲ့ script ပါ os အသစ်တင်ပြီးတာနဲ့ script run ပြီး အဆင်သင်အသုံးပြုနိုင်ပါတယ်
 
