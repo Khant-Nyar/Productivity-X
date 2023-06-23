@@ -22,22 +22,54 @@ initialize_git_repo() {
 
 # Function to configure Git user name and email
 configure_git_user() {
-    if [[ -z $1 || -z $2 ]]; then
-        echo "Please provide both user name and email."
+    read -p "Enter user name: " username
+    read -p "Enter email: " email
+
+    default_branch="main" # Default branch is set to "main"
+
+    git config --global user.name "$username"
+    git config --global user.email "$email"
+    git config --global init.defaultBranch "$default_branch"
+
+    echo "Git user configured:"
+    echo "User Name: $username"
+    echo "Email: $email"
+    echo "Default Branch: $default_branch"
+
+    read -p "Do you want to generate an SSH key? (y/n): " generate_key
+
+    if [[ $generate_key == "y" || $generate_key == "Y" ]]; then
+        ssh-keygen -t ed25519 -C "$email" -f ~/.ssh/git_sshed
+        echo "SSH key generated."
     else
-        git config --global user.name "$1"
-        git config --global user.email "$2"
-        echo "Git user configured: $1 <$2>"
+        echo "Skipping SSH key generation."
     fi
+
+    echo "Git Configuration:"
+    echo "------------------"
+    echo "User Name: $(git config --global user.name)"
+    echo "Email: $(git config --global user.email)"
+    echo "Default Branch: $(git config --global init.defaultBranch)"
+    echo
+
+    echo "SSH Key:"
+    echo "--------"
+    cat ~/.ssh/git_sshed.pub || echo "No SSH key found."
+    echo "copy it into your github accout sshkey "
 }
 
-# Function to configure SSH path for GitHub authentication
-configure_git_ssh() {
-    if [[ -z $1 ]]; then
-        echo "Please provide the SSH path."
+
+
+# Function to generate SSH key if needed
+generate_ssh_key() {
+    read -p "Do you want to generate an SSH key? (y/n): " generate_key
+
+    if [[ $generate_key =~ ^[Yy]$ ]]; then
+        read -p "Enter your email: " email
+        ssh-keygen -t ed25519 -C "$email"
+        echo "SSH key generated."
     else
-        git config --global core.sshCommand "ssh -i $1"
-        echo "Git SSH path configured: $1"
+        echo "Skipping SSH key generation."
     fi
 }
 
@@ -84,25 +116,59 @@ switch_branch() {
     fi
 }
 
-# Print help message
+# Function to print the menu options
+print_menu() {
+    echo "Git Productivity Script"
+    echo "-----------------------"
+    echo "1. Initialize a new Git repository"
+    echo "2. Configure Git user"
+    echo "3. Generate SSH key"
+    echo "4. Add and commit changes"
+    echo "5. Push changes to remote repository"
+    echo "6. Pull changes from remote repository"
+    echo "7. View Git status"
+    echo "8. View Git log"
+    echo "9. Switch to a different branch"
+    echo "0. Exit"
+    echo
+}
+
+# Function to read user input from the menu
+read_input() {
+    local choice
+    read -p "Enter your choice: " choice
+    echo
+
+    case $choice in
+        1) initialize_git_repo ;;
+        2) configure_git_user ;;
+        3) generate_ssh_key ;;
+        4) read -p "Enter commit message: " commit_message
+           add_and_commit "$commit_message" ;;
+        5) push_changes ;;
+        6) pull_changes ;;
+        7) view_status ;;
+        8) view_log ;;
+        9) read -p "Enter branch name: " branch_name
+           switch_branch "$branch_name" ;;
+        0) exit ;;
+        *) echo "Invalid choice." ;;
+    esac
+}
+
+# Function to print the help message
 print_help() {
     echo "Usage: $0 <command> [arguments]"
     echo "Commands:"
     echo "  init <remote-url>                  Initialize a new Git repository, commit 'init' on default branch 'main', and push changes"
-    echo "  configure-user <user-name> <email> Configure Git user name and email"
-    echo "  configure-ssh <ssh-path>           Configure SSH path for GitHub authentication"
-    echo "  add-commit <message>               Add and commit changes with a message"
-    echo "  push                              Push changes to a remote repository"
-    echo "  pull                              Pull changes from a remote repository"
-    echo "  status                            View Git status"
-    echo "  log                               View Git log"
-    echo "  switch <branch-name>               Switch to a different branch"
-    echo "  menu                              Open interactive menu"
-    echo "  -h, --help                        Show help"
-    echo "  -v, --version                     Show version information"
+    echo "  configure-user                     Configure Git user name, email, and default branch"
+    echo "  generate-key                       Generate SSH key"
+    echo "  menu                               Open interactive menu"
+    echo "  -h, --help                         Show help"
+    echo "  -v, --version                      Show version information"
 }
 
-# Print version information
+# Function to print the version information
 print_version() {
     echo "Git Productivity Script version 1.1"
 }
@@ -124,28 +190,10 @@ case $1 in
         initialize_git_repo "$2"
         ;;
     "configure-user")
-        configure_git_user "$2" "$3"
+        configure_git_user
         ;;
-    "configure-ssh")
-        configure_git_ssh "$2"
-        ;;
-    "add-commit")
-        add_and_commit "$2"
-        ;;
-    "push")
-        push_changes
-        ;;
-    "pull")
-        pull_changes
-        ;;
-    "status")
-        view_status
-        ;;
-    "log")
-        view_log
-        ;;
-    "switch")
-        switch_branch "$2"
+    "generate-key")
+        generate_ssh_key
         ;;
     "menu")
         while true; do
@@ -160,9 +208,8 @@ case $1 in
     "-v" | "--version")
         print_version
         ;;
-    *)
-        echo "Invalid command."
-        echo "Use '$0 -h' or '$0 --help' for more information."
-        exit 1
-        ;;
+    *) echo "Invalid command."
+       echo "Use '$0 -h' or '$0 --help' for more information."
+       exit 1
+       ;;
 esac
